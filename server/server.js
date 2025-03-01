@@ -16,8 +16,8 @@ const Message = mongoose.model("Message", {
   senderId: String,
   receiverId: String,
   text: String,
-  image: String,
-  video: String,
+  images: [String],
+  videos: [String],
   user: {
     _id: { type: String, required: true }, 
   },
@@ -47,6 +47,14 @@ io.on("connection", (socket) => {
     io.emit("receiveMessage", message);
   });
 
+  socket.on("deleteMessage", async ({ messageId, userId }) => {
+    const message = await Message.findById(messageId);
+    if (message && message.senderId === userId) {
+      await Message.findByIdAndDelete(messageId);
+      io.emit("messageDeleted", messageId);
+    }
+  });
+
   socket.on("disconnect", () => console.log("User disconnected:"));
 });
 
@@ -61,8 +69,24 @@ app.get("/messages/:senderId/:receiverId", async (req, res) => {
   res.json(messages);
 });
 
-app.post("/upload", upload.single("file"), (req, res) => {
-  res.json({ url: `uploads/${req.file.filename}` });
+app.post("/upload", upload.array("files", 10), (req, res) => {
+  const fileUrls = req.files.map(file => `uploads/${file.filename}`);
+  res.json({ urls: fileUrls });
+});
+
+app.delete("/messages/:messageId", async (req, res) => {
+  const { messageId } = req.params;
+  try {
+    const message = await Message.findById(messageId);
+    if (message) {
+      await Message.findByIdAndDelete(messageId);
+      io.emit("messageDeleted", messageId);
+      return res.json({ success: true, message: "Message deleted successfully." });
+    }
+    res.status(404).json({ success: false, message: "Message not found." });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error." });
+  }
 });
 
 server.listen(5000, () => console.log("Server running on port 5000"));
