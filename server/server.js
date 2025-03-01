@@ -18,6 +18,9 @@ const Message = mongoose.model("Message", {
   text: String,
   image: String,
   video: String,
+  user: {
+    _id: { type: String, required: true }, 
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
