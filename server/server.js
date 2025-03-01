@@ -59,7 +59,7 @@ app.get("/messages/:senderId/:receiverId", async (req, res) => {
 });
 
 app.post("/upload", upload.single("file"), (req, res) => {
-  res.json({ url: `http://localhost:5000/uploads/${req.file.filename}` });
+  res.json({ url: `uploads/${req.file.filename}` });
 });
 
 server.listen(5000, () => console.log("Server running on port 5000"));
